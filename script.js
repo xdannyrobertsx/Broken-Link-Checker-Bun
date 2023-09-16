@@ -1,30 +1,23 @@
 import readline from "readline";
 import { LinkChecker } from "linkinator";
-import fs from "fs/promises";
-import path from "path";
 import { SingleBar, Presets } from "cli-progress";
 
 async function checkLinksFromFile(filename, filterBroken) {
   const outputFilePath = "broken_links.csv";
 
-  const currentWorkingDir = process.cwd();
-  const linksFilePath = path.join(currentWorkingDir, filename);
+  const file = Bun.file(filename);
 
   try {
-    const fileExists = await fs
-      .access(linksFilePath)
-      .then(() => true)
-      .catch(() => false);
-    if (!fileExists) {
+    if (file.size == 0) {
       console.error(`The file "${filename}" does not exist.`);
       return;
     }
 
-    const links = (await fs.readFile(linksFilePath, "utf-8"))
-      .split("\n")
-      .filter((link) => {
-        lineCleaner(link.trim()) !== "";
-      });
+    const fileText = await file.text();
+    const links = fileText.split("\n").filter((link) => {
+      return lineCleaner(link.trim()) !== "";
+    });
+
     const checker = new LinkChecker();
 
     const brokenLinks = [];
@@ -34,7 +27,7 @@ async function checkLinksFromFile(filename, filterBroken) {
     });
 
     checker.on("link", (result) => {
-      if (!filterBroken || result.state === "BROKEN") {
+      if (!filterBroken || (result.state === "BROKEN" && result.status != 0)) {
         brokenLinks.push(result);
       }
     });
@@ -71,7 +64,8 @@ async function checkLinksFromFile(filename, filterBroken) {
           },${link.parent}`
       )
       .join("\n");
-    await fs.writeFile(
+
+    await Bun.write(
       outputFilePath,
       "Link,Status,HTTP Code,Parent\n" + csvContent
     );
