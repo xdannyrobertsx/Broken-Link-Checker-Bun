@@ -1,0 +1,9 @@
+{
+  "name": "broken-link-checker-bun",
+  "module": "script.js",
+  "type": "module",
+  "dependencies": {
+    "cli-progress": "^3.12.0",
+    "linkinator": "^5.0.2"
+  }
+}
